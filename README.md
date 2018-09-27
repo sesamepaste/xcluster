@@ -98,3 +98,5 @@ Run PERCH on ALOI:
   - You'll need perl installed on your system to run experiment shell scripts as is. perl is used to shuffle the data. If you can't run perl, you can change this to another shuffling method of your choice.
   - The scripts in this project use environment variables set in the setup script. You'll need to source this set up script in each shell session running this project.
   - Java Version 1.8 and Scala 2.11.7 are used in this project. Java 1.8 must be installed on your system. It is not necessary to have Scala installed.
+  
+  H
