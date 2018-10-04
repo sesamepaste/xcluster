@@ -17,10 +17,12 @@ import numpy as np
 from collections import defaultdict
 import random
 import string
-from queue import Queue
+from Queue import Queue
 from heapq import heappush, heappop
 from numba import jit
 from bisect import bisect_left
+from numpy import dot
+from numpy.linalg import norm
 
 import math
 
@@ -52,6 +54,7 @@ def _fast_norm_diff(x, y):
     Returns:
     The 2-norm of x - y.
     """
+    return 1 - dot(x, y)/(norm(x)*norm(y))
     return _fast_norm(x - y)
 
 
@@ -194,7 +197,10 @@ class PNode:
                     mn = d
             return mn
         else:
-            return _fast_min_to_box(self.mins, self.maxes, x)
+            try:
+                return _fast_min_to_box(self.mins, self.maxes, x)
+            except Exception as e:
+                print(self.mins.shape, self.maxes.shape, x.shape)
 
     def max_distance(self, x):
         """Compute the maximum distance between a point x and this node.
@@ -206,7 +212,7 @@ class PNode:
         A float representing the upper bound.
         """
         if self.pts and self.point_counter == 1:
-            return _fast_norm(x - self.pts[0][0])
+            return _fast_norm_diff(x, self.pts[0][0])
         elif self.pts:
             mx = 0
             for pt in self.pts:

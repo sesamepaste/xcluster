@@ -13,11 +13,11 @@ num_threads=24
 mkdir -p $output_dir
 
 # Shuffle
-sh bin/util/shuffle_dataset.sh $dataset_file $num_runs
+ sh bin/util/shuffle_dataset.sh $dataset_file $num_runs
 
 expected_dp_point_file="None"
 
-for i in `seq 1  $num_runs`
+for i in `seq 1  1`
     do
         algorithm_name="Perch-py"
         shuffled_data="${dataset_file}.$i"
@@ -26,9 +26,9 @@ for i in `seq 1  $num_runs`
         python -m xcluster.eval.eval_dataset --input $shuffled_data --outdir $exp_output_dir \
         --algorithm $algorithm_name --dataset $dataset_name --max_leaves None --clusters None
 
-        sh bin/util/score_tree.sh \
-        $exp_output_dir/tree.tsv $algorithm_name $dataset_name $num_threads $expected_dp_point_file \
-         > $exp_output_dir/score.txt
+        # sh bin/util/score_tree.sh \
+        # $exp_output_dir/tree.tsv $algorithm_name $dataset_name $num_threads $expected_dp_point_file \
+        #  > $exp_output_dir/score.txt
 
-        cat $exp_output_dir/score.txt
+        # cat $exp_output_dir/score.txt
 done
