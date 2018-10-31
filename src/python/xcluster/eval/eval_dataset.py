@@ -12,13 +12,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-
-import numpy as np
 import argparse
 import time, datetime
 import os
 import sys
 import errno
+import math
+import nmslib
+import numpy as np
 
 from xcluster.models.PNode import PNode
 
@@ -38,14 +39,19 @@ def mkdir_p_safe(dir):
         if exception.errno != errno.EEXIST:
             raise
 
+def _coscomp(y):
+    f = np.vectorize(lambda x: math.sqrt(1 - x*x))
+    return f(y)
 
 def load_data(filename):
     with open(filename, 'r') as f:
+        a = []
         for line in f:
             splits = line.strip().split('\t')
             pid, l, vec = splits[0], splits[1], np.array([float(x)
                                                           for x in splits[2:]])
-            yield ((vec, l, pid))
+            a.append((vec, l, pid, _coscomp(vec)))
+        return a
 
 
 if __name__ == "__main__":
@@ -87,7 +93,8 @@ if __name__ == "__main__":
     collapsibles = [] if L < float("Inf") else None
     exact_dist_thresh = args.exact_dist_thres
     root = PNode(exact_dist_thres=10)
-    for pt in load_data(args.input):
+    data = load_data(args.input)
+    for pt in data:
         pt_start = time.time()
         root = root.insert(pt, collapsibles=collapsibles, L=L)
         pt_end = time.time()

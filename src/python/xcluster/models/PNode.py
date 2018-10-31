@@ -23,9 +23,8 @@ from numba import jit
 from bisect import bisect_left
 from numpy import dot
 from numpy.linalg import norm
-
+import traceback
 import math
-
 
 @jit(nopython=True)
 def _fast_norm(x):
@@ -40,10 +39,9 @@ def _fast_norm(x):
     s = 0.0
     for i in range(len(x)):
         s += x[i] ** 2
-    return math.sqrt(s)
+    return s
 
 
-@jit(nopython=True)
 def _fast_norm_diff(x, y):
     """Compute the norm of x - y using numba.
 
@@ -54,8 +52,8 @@ def _fast_norm_diff(x, y):
     Returns:
     The 2-norm of x - y.
     """
-    return 1 - dot(x, y)/(norm(x)*norm(y))
-    return _fast_norm(x - y)
+    return _fast_norm(x-y)
+    return 1 - dot(x, y)
 
 
 @jit(nopython=True)
@@ -188,20 +186,16 @@ class PNode:
         A float representing the lower bound.
         """
         if self.pts and self.point_counter == 1:
-            return _fast_norm_diff(x, self.pts[0][0])
+            return _fast_norm_diff(x, self.pts[0][3])
         elif self.pts:
             mn = float('inf')
             for pt in self.pts:
-                d = _fast_norm_diff(x, pt[0])
+                d = _fast_norm_diff(x, pt[3])
                 if d < mn:
                     mn = d
             return mn
         else:
-            try:
-                return _fast_min_to_box(self.mins, self.maxes, x)
-            except Exception as e:
-                print(self.mins.shape, self.maxes.shape, x.shape)
-
+            return _fast_min_to_box(self.mins, self.maxes, x)
     def max_distance(self, x):
         """Compute the maximum distance between a point x and this node.
 
@@ -212,11 +206,11 @@ class PNode:
         A float representing the upper bound.
         """
         if self.pts and self.point_counter == 1:
-            return _fast_norm_diff(x, self.pts[0][0])
+            return _fast_norm_diff(x, self.pts[0][3])
         elif self.pts:
             mx = 0
             for pt in self.pts:
-                d = _fast_norm_diff(x, pt[0])
+                d = _fast_norm_diff(x, pt[3])
                 if d > mx:
                     mx = d
             return mx
@@ -283,8 +277,10 @@ class PNode:
                 self.parent and self.siblings()[0].pts)
             return self, new_mins_or_maxes or still_have_pts
         else:
-            self.mins = self.pts[0][0]
-            self.maxes = self.pts[0][0]
+            # self.mins = self.pts[0][0]
+            # self.maxes = self.pts[0][0]
+            self.mins = self.pts[0][3]
+            self.maxes = self.pts[0][3]
             if self.parent:
                 self.parent._update_children_min_d()
                 self.parent._update_children_max_d()
@@ -348,7 +344,7 @@ class PNode:
         Returns:
         A pointer to a node (that contains the nearest neighbor of x).
         """
-        dp = pt[0]
+        dp = pt[3]
         if not self.children:
             return self
         else:
@@ -383,13 +379,13 @@ class PNode:
         Returns:
         The approximate nearest neighbor of pt in the current tree.
         """
-        dp = pt[0]
+        dp = pt[3]
         # Micro-optimization.
         if self.point_counter <= beam_width:
             best_leaf = None
             d = float("inf")
             for l in self.leaves():
-                dis = _fast_norm_diff(l.pts[0][0], dp)
+                dis = _fast_norm_diff(l.pts[0][3], dp)
                 if dis < d:
                     d = dis
                     best_leaf = l
@@ -421,7 +417,7 @@ class PNode:
                             priorities.insert(ind, min_d)
                     else:
                         heappush(best_leaves_so_far,
-                                 (_fast_norm_diff(target.pts[0][0], dp),
+                                 (_fast_norm_diff(target.pts[0][3], dp),
                                   target))
                 while len(frontier) > beam_width:
                     frontier.pop()
